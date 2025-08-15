@@ -1,0 +1,94 @@
+<!-- ========== NEW EXECUTION STARTS HERE ========== -->
+  <!-- NEW: Generate Backend Folder Files for DB2_UDB_V101 -->
+  <execution>
+    <id>generateBackendFiles</id>
+    <phase>package</phase>
+    <goals>
+      <goal>run</goal>
+    </goals>
+    <configuration>
+      <tasks>
+        <echo>****************************************************</echo>
+        <echo>*** Generating Backend Folder Files for DB2_UDB_V101</echo>
+        <echo>****************************************************</echo>
+        
+        <!-- NEW: Setup backend directory -->
+        <property name="backend.name" value="DB2_UDB_V101"/>
+        <property name="backend.dir" value="${project.build.directory}/backends/${backend.name}"/>
+        <property name="db.schema" value="DB2UDB"/>
+        
+        <mkdir dir="${backend.dir}"/>
+        <echo>Created backend directory: ${backend.dir}</echo>
+        
+        <!-- NEW: Define WebSphere classpath -->
+        <path id="ws.classpath">
+          <fileset dir="${ubs.was.home}/lib" erroronmissingdir="false">
+            <include name="**/*.jar"/>
+          </fileset>
+          <fileset dir="${ubs.was.home}/plugins" erroronmissingdir="false">
+            <include name="**/*.jar"/>
+          </fileset>
+          <fileset dir="${ubs.was.home}/deploytool/itp/plugins" erroronmissingdir="false">
+            <include name="**/*.jar"/>
+          </fileset>
+        </path>
+        
+        <!-- NEW: Load WebSphere ANT tasks -->
+        <taskdef resource="com/ibm/websphere/ant/wsant.properties" 
+                 classpathref="ws.classpath" 
+                 onerror="report"/>
+        
+        <!-- NEW: Generate Map.mapxml -->
+        <echo>Generating Map.mapxml...</echo>
+        <wsmapping 
+            inputEJBJar="${project.build.directory}/deploymentdescriptor/db2/classes"
+            backend="${backend.dir}"
+            createTables="true"
+            mapTopDown="true"
+            outputMapping="${backend.dir}/Map.mapxml"
+            failonerror="false"/>
+        
+        <!-- NEW: Generate Table.ddl -->
+        <echo>Generating Table.ddl...</echo>
+        <wsddl 
+            backend="${backend.dir}"
+            schema="${db.schema}"
+            outputfile="${backend.dir}/Table.ddl"
+            dbtype="DB2_UDB"
+            failonerror="false"/>
+        
+        <!-- NEW: Generate Physical Data Model (.dbm) -->
+        <echo>Generating ${db.schema}.dbm...</echo>
+        <wsdbmodel 
+            backend="${backend.dir}"
+            schema="${db.schema}"
+            outputfile="${backend.dir}/${db.schema}.dbm"
+            dbtype="DB2_UDB"
+            failonerror="false"/>
+        
+        <!-- NEW: Generate ibm_pm_ejb.properties -->
+        <echo>Generating ibm_pm_ejb.properties...</echo>
+        <propertyfile file="${backend.dir}/ibm_pm_ejb.properties">
+          <entry key="datasource.name" value="jdbc/${db.schema}"/>
+          <entry key="database.type" value="DB2_UDB"/>
+          <entry key="schema.name" value="${db.schema}"/>
+          <entry key="backend.folder" value="${backend.name}"/>
+          <entry key="mapping.file" value="Map.mapxml"/>
+          <entry key="generated.by" value="Maven ANT Plugin"/>
+          <entry key="generated.timestamp" value="${maven.build.timestamp}"/>
+          <entry key="project.version" value="${project.version}"/>
+        </propertyfile>
+        
+        <!-- NEW: Summary -->
+        <echo>****************************************************</echo>
+        <echo>*** Backend Files Generated Successfully</echo>
+        <echo>*** Location: ${backend.dir}</echo>
+        <echo>*** Files:</echo>
+        <echo>***   - Map.mapxml</echo>
+        <echo>***   - Table.ddl</echo>
+        <echo>***   - ${db.schema}.dbm</echo>
+        <echo>***   - ibm_pm_ejb.properties</echo>
+        <echo>****************************************************</echo>
+      </tasks>
+    </configuration>
+  </execution>
